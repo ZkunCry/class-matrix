@@ -1,5 +1,4 @@
-﻿#include <stdio.h>
-#include <malloc.h>
+#include <stdio.h>
 #include <iostream>
 #include <cmath>
 using namespace std;
@@ -221,7 +220,7 @@ public:
                 this->a[i][j] = temp.a[i][j];
         return *this;
     }
-    int deter()
+    double deter()
     {
         matrix temp(this->n, this->m);
         double determenation = 1;
