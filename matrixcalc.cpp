@@ -1,8 +1,10 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <iostream>
 #include <cmath>
 #include <string.h>
+
 using namespace std;
 
 class matrix
@@ -130,6 +132,94 @@ public:
             return temp;
         }
     }
+    matrix& operator/(matrix& a)
+    {
+        matrix temp(n, m);
+        matrix result(n, m);
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                temp.a[i][j] = this->a[i][j];
+        a.inversion();
+        result = temp * a;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                this->a[i][j] = result.a[i][j];
+        return *this;
+    }
+    matrix& operator++()
+    {
+        for (int i = 0; i < this->n; i++)
+            for (int j = 0; j < this->m; j++)
+                this->a[i][j]++;
+        return *this;
+    }
+    matrix operator++(int)
+    {
+        matrix temp(*this);
+        for (int i = 0; i < this->n; i++)
+            for (int j = 0; j < this->m; j++)
+                this->a[i][j]++;
+        return temp;
+    }
+    matrix& operator--()
+    {
+        for (int i = 0; i < this->n; i++)
+            for (int j = 0; j < this->m; j++)
+                this->a[i][j]--;
+        return *this;
+    }
+    matrix operator--(int)
+    {
+        matrix temp(*this);
+        for (int i = 0; i < this->n; i++)
+            for (int j = 0; j < this->m; j++)
+                this->a[i][j]--;
+        return temp;
+    }
+    double& operator[](int index)
+    {
+        if (index<0 || index >(this->n + this->m))
+        {
+            cout << "Error!\n";
+        }
+        else
+            return (*a)[index];
+
+    }
+    matrix& operator^(int n)
+    {
+        if (n > 0)
+        {
+            matrix temp(this->n, this->m), temp2(this->n, this->m);
+            int q = 1;
+            for (int i = 0; i < this->n; i++)
+                for (int j = 0; j < this->m; j++)
+                    temp.a[i][j] = this->a[i][j];
+            while (q != n)
+            {
+                for (int i = 0; i < this->n; i++)
+                {
+                    for (int j = 0; j < this->m; j++)
+                        for (int k = 0; k < this->n; k++)
+                            temp2.a[i][j] += temp.a[i][k] * this->a[k][j];
+                }
+                for (int i = 0; i < this->n; i++)
+                    for (int j = 0; j < this->m; j++)
+                        temp.a[i][j] = temp2.a[i][j];
+
+                for (int i = 0; i < this->n; i++)
+                    for (int j = 0; j < this->m; j++)
+                        temp2.a[i][j] = 0;
+                q++;
+            }
+            for (int i = 0; i < this->n; i++)
+                for (int j = 0; j < this->m; j++)
+                    this->a[i][j] = temp.a[i][j];
+            return *this;
+        }
+        else
+            return *this;
+    }
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////Операции над матрицами и методы для вывода/ввода(геттер) матрицы//////////////////////////////////////////////
     matrix transp()
@@ -172,40 +262,7 @@ public:
         }
         return *this;
     }
-    matrix& operator^(int n)
-    {
-        if (n > 0)
-        {
-            matrix temp(this->n, this->m), temp2(this->n, this->m);
-            int q = 1;
-            for (int i = 0; i < this->n; i++)
-                for (int j = 0; j < this->m; j++)
-                    temp.a[i][j] = this->a[i][j];
-            while (q != n)
-            {
-                for (int i = 0; i < this->n; i++)
-                {
-                    for (int j = 0; j < this->m; j++)
-                        for (int k = 0; k < this->n; k++)
-                            temp2.a[i][j] += temp.a[i][k] * this->a[k][j];
-                }
-                for (int i = 0; i < this->n; i++)
-                    for (int j = 0; j < this->m; j++)
-                        temp.a[i][j] = temp2.a[i][j];
-
-                for (int i = 0; i < this->n; i++)
-                    for (int j = 0; j < this->m; j++)
-                        temp2.a[i][j] = 0;
-                q++;
-            }
-            for (int i = 0; i < this->n; i++)
-                for (int j = 0; j < this->m; j++)
-                    this->a[i][j] = temp.a[i][j];
-            return *this;
-        }
-        else
-            return *this;
-    }
+    
     int deter()
     {
         matrix temp(this->n, this->m);
@@ -327,20 +384,8 @@ public:
        else
            return *this;
     }
-    matrix& operator/(matrix& a)
-    {
-        matrix temp(n, m);
-        matrix result(n, m);
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                temp.a[i][j]= this->a[i][j];
-        a.inversion();
-        result = temp *a;
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                this->a[i][j] = result.a[i][j];
-        return *this;
-    }
+   
+    
 };
 ostream& operator<<(ostream& out, matrix a)
 {
@@ -376,9 +421,8 @@ int main()
     system("chcp 1251>null");
     int n, m, result = 0;
     cin >> n >> m;
-    matrix x(n,m), temp2(n,m),temp3(n,m);
-    cin >> x>>temp2;
-    temp3 = x / temp2;
-    cout << temp3;
+    matrix x(n, m),temp(n,m);
+    cin >> x;
+    cout << x[1];
     return 0;
 }
