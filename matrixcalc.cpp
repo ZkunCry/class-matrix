@@ -18,7 +18,9 @@ enum Error
     MATRIX_INV,
     MATRIX_MINOR,
     MATRIX_GAUSS,
-    MATRIX_EXP
+    MATRIX_EXP,
+    MATRIX_MULNUM,
+    MATRIX_DET
 
 };
 
@@ -60,17 +62,25 @@ private:
         case MATRIX_EXP:
             printf("An error occurred while executing the exponentiation function\n");
             break;
+        case MATRIX_GAUSS:
+            printf("An error occurred while executing the find triangular matrix function\n");
+            break;
+        case MATRIX_MULNUM:
+            printf("An error occurred while executing the multiplication function\n");
+            break;
+        case MATRIX_DET:
+            printf("An error occurred while executing the determiner function\n");
+            break;
         }
         //Вывод на экран типа ошибки
         printf("Type error: %s\n", errType);
     }
 
 public:
-
     const double eps = 1e-9;
 
     //Конструкторы(в том числе и копирования) и деструктор///////////
-    matrix() :a(0), n(0), m(0), countSwaps(1) {}
+    matrix() :a(NULL), n(0), m(0), countSwaps(1) {}
     matrix(int N, int M) :n(N), m(M)
     {
         countSwaps = 1;
@@ -86,7 +96,7 @@ public:
     ~matrix()
     {
         int i = 0;
-        if (a != NULL)
+        if (a != nullptr)
         {
             for (i = 0; i < n; i++)
                 delete[]a[i];
@@ -95,10 +105,11 @@ public:
     }
     matrix(const matrix& other)
     {
-        this->n = other.n;
-        this->m = other.m;
+       
         if (other.a && other.n != 0 && other.m != 0)
         {
+            this->n = other.n;
+            this->m = other.m;
             a = new double* [n];
             for (int i = 0; i < n; i++)
                 this->a[i] = new double[other.m];
@@ -114,32 +125,45 @@ public:
 ////////////Перегрузка операторов = - + *////////////////
     matrix& operator = (const matrix& other)
     {
-        if (this->a != nullptr)
+        if (other.n > 0 || other.m > 0 && !(&other))
         {
-            for (int i = 0; i < this->n; i++)
-                delete[]this->a[i];
-        }
-        else if (this->a == nullptr)
-        {
-            error(MATRIX_OPERATOR_EQUAL, "Массив содержит нулевое значение или неинициализирован.\n");
+            if (this->a != nullptr)
+            {
+                for (int i = 0; i < this->n; i++)
+                    delete[]this->a[i];
+            }
+            else if (this->a == nullptr)
+            {
+                error(MATRIX_OPERATOR_EQUAL, "Массив содержит нулевое значение или неинициализирован.\n");
+                return *this;
+            }
+            delete[]a;
+            this->n = other.n;
+            this->m = other.m;
+            this->a = new double* [other.n];
+            for (int i = 0; i < n; i++)
+            {
+                this->a[i] = new double[other.m];
+            }
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    this->a[i][j] = other.a[i][j];
+                }
+            }
             return *this;
         }
-        delete[]a;
-        this->n = other.n;
-        this->m = other.m;
-        this->a = new double* [other.n];
-        for (int i = 0; i < n; i++)
+        else if(other.n <0 || other.m<0 )
         {
-            this->a[i] = new double[other.m];
+            error(MATRIX_OPERATOR_EQUAL, "Размерность матрицы меньше единицы\n");
+            return *this;
         }
-        for (int i = 0; i < n; i++)
+        else if (other.a == NULL)
         {
-            for (int j = 0; j < m; j++)
-            {
-                this->a[i][j] = other.a[i][j];
-            }
+            error(MATRIX_OPERATOR_EQUAL, "Матрица неинициализирована\n");
+            return *this;
         }
-        return *this;
     }
     matrix operator*(const matrix& other)
     {
@@ -164,10 +188,18 @@ public:
     }
     matrix &operator *(const int number)
     {
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                this->a[i][j] *= number;
-        return *this;
+        if (!this)
+        {
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < m; j++)
+                    this->a[i][j] *= number;
+            return *this;
+        }
+        else
+        {
+            error(MATRIX_MULNUM, "Матрица неинициализирована\n");
+            exit(1);
+        }
     }
     matrix operator+(const matrix& other)
     {
@@ -235,7 +267,7 @@ public:
         return *this;
     }
     matrix operator++(int)
-    {
+    { 
         matrix temp(*this);
         for (int i = 0; i < this->n; i++)
             for (int j = 0; j < this->m; j++)
@@ -269,7 +301,7 @@ public:
     }
     matrix& operator^(int n)
     {
-        if (n > 0 && !this)
+        if (n > 0)
         {
             matrix temp(this->n, this->m), temp2(this->n, this->m);
             int q = 1;
@@ -300,7 +332,7 @@ public:
         }
         else
         {
-            error(MATRIX_EXP, "Степень меньше нуля или матрица неинициализирована.\n");
+            error(MATRIX_EXP, "Степень меньше нуля.\n");
             exit(1);
         }
     }
@@ -327,7 +359,7 @@ public:
     }
     matrix& gauss()
     {
-        if (this->n == this->m && !this)
+        if (this->n == this->m && this->n >0 && this->m >0)
         {
             int i = 0, j = 0, k;
             double temp = 0;
@@ -365,30 +397,43 @@ public:
     
     double deter()
     {
-        matrix temp(this->n, this->m);
-        double determenation = 1;
-        for (int i = 0; i < n; i++)
+        if (!this && this->n >0 && this->m >0)
         {
-            for (int j = 0; j < m; j++)
-                temp.a[i][j] = this->a[i][j];
+            matrix temp(this->n, this->m);
+            double determenation = 1;
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                    temp.a[i][j] = this->a[i][j];
+            }
+            temp.gauss();
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                    this->a[i][j] = temp.a[i][j];
+            }
+            for (int i = 0; i < this->n; i++)
+            {
+                determenation *= temp.a[i][i];
+            }
+            determenation *= temp.countSwaps;
+            return determenation;
         }
-        temp.gauss();
-        for (int i = 0; i < n; i++)
+        else if(this == NULL)
         {
-            for (int j = 0; j < m; j++)
-                this->a[i][j] = temp.a[i][j];
+            error(MATRIX_DET, "Матрица неинициализирована\n");
+            exit(1);
         }
-        for (int i = 0; i < this->n; i++)
+        else if (this->n < 1 || this->m <1)
         {
-            determenation *= temp.a[i][i];
+            error(MATRIX_DET, "Размерность матрицы меньше единицы\n");
+            exit(1);
         }
-        determenation *= temp.countSwaps;
-        return determenation;
     }
     //Функция нахождения минора
     matrix minor(int i, int j)
     {
-        if (i > n || j > n || !this)
+        if (i > n || j > n || this->a==NULL)
         {
             error(MATRIX_MINOR, "Матриц не инициализирована или вы вышли за пределы матрицы.\n");
             exit(1);
@@ -432,68 +477,81 @@ public:
     }
     matrix &inversion()
     {
-        matrix Temp(this->n, this->m);
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                Temp.a[i][j] = this->a[i][j];
-       double determenant = Temp.deter();
-       if (determenant != 0 || this->n == this->m)
-       {
-           int i = 0, j = 0, k = 0;
-           if (this->n == this->m)
-           {
-               double temp;
-               matrix E(this->n, this->m);
-               for (i = 0; i < this->n; i++)
-                   for (j = 0; j < this->n; j++)
-                   {
-                       E.a[i][j] = 0.0;
-                       if (i == j)
-                           E.a[i][j] = 1.0;
-                   }
-               for (k = 0; k < this->n; k++)
-               {
-                   temp = this->a[k][k];
-                   for (j = 0; j < this->n; j++)
-                   {
-                       this->a[k][j] /= temp;
-                       E.a[k][j] /= temp;
-                   }
-                   for (i = k + 1; i < this->n; i++)
-                   {
-                       temp = this->a[i][k];
+        if (!this || this->n > 0 && this->m > 0)
+        {
+            matrix Temp(this->n, this->m);
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < m; j++)
+                    Temp.a[i][j] = this->a[i][j];
+            double determenant = Temp.deter();
+            if (determenant != 0 || this->n == this->m)
+            {
+                int i = 0, j = 0, k = 0;
+                if (this->n == this->m)
+                {
+                    double temp;
+                    matrix E(this->n, this->m);
+                    for (i = 0; i < this->n; i++)
+                        for (j = 0; j < this->n; j++)
+                        {
+                            E.a[i][j] = 0.0;
+                            if (i == j)
+                                E.a[i][j] = 1.0;
+                        }
+                    for (k = 0; k < this->n; k++)
+                    {
+                        temp = this->a[k][k];
+                        for (j = 0; j < this->n; j++)
+                        {
+                            this->a[k][j] /= temp;
+                            E.a[k][j] /= temp;
+                        }
+                        for (i = k + 1; i < this->n; i++)
+                        {
+                            temp = this->a[i][k];
 
-                       for (j = 0; j < this->n; j++)
-                       {
-                           this->a[i][j] -= this->a[k][j] * temp;
-                           E.a[i][j] -= E.a[k][j] * temp;
-                       }
-                   }
-               }
-               for (k = this->n - 1; k > 0; k--)
-               {
-                   for (i = k - 1; i >= 0; i--)
-                   {
-                       temp = this->a[i][k];
+                            for (j = 0; j < this->n; j++)
+                            {
+                                this->a[i][j] -= this->a[k][j] * temp;
+                                E.a[i][j] -= E.a[k][j] * temp;
+                            }
+                        }
+                    }
+                    for (k = this->n - 1; k > 0; k--)
+                    {
+                        for (i = k - 1; i >= 0; i--)
+                        {
+                            temp = this->a[i][k];
 
-                       for (j = 0; j < this->n; j++)
-                       {
-                           this->a[i][j] -= this->a[k][j] * temp;
-                           E.a[i][j] -= E.a[k][j] * temp;
-                       }
-                   }
-               }
-               for (i = 0; i < this->n; i++)
-                   for (j = 0; j < this->n; j++)
-                       this->a[i][j] = E.a[i][j];
-           }
-           return *this;
-       }
-       else
-       {
-           error(MATRIX_INV, "Определитель матрицы равен нулю или матрица неквадратная.\n");
-           exit(1);
-       }
+                            for (j = 0; j < this->n; j++)
+                            {
+                                this->a[i][j] -= this->a[k][j] * temp;
+                                E.a[i][j] -= E.a[k][j] * temp;
+                            }
+                        }
+                    }
+                    for (i = 0; i < this->n; i++)
+                        for (j = 0; j < this->n; j++)
+                            this->a[i][j] = E.a[i][j];
+                }
+                return *this;
+            }
+            else if (determenant == 0)
+            {
+                error(MATRIX_INV, "Определитель матрицы равен нулю.\n");
+                exit(1);
+            }
+            else if (this->n != this->m)
+            {
+                error(MATRIX_INV, "Матрица не квадратная\n");
+                exit(1);
+            }
+        }
+        else
+        {
+            error(MATRIX_INV, "Матрица неинициализирована\n");
+            exit(1);
+        }
     } 
     double& operator()(int n, int m)
     {
@@ -502,6 +560,7 @@ public:
 };
 ostream& operator<<(ostream& out, matrix a)
 {
+    
     a.get();
     for (int i = 0; i < a.getn(); i++)
     {
@@ -509,29 +568,34 @@ ostream& operator<<(ostream& out, matrix a)
         for (int j = 0; j < a.getm(); j++)
         {
             char s[25];
-            sprintf(s,"%11.5lf ", a(i, j));
+            sprintf(s, "%11.5lf ", a(i, j));
             out << s;
         }
         out << "  |\n";
     }out << "\n\n";
     return (out);
+
 }
 istream& operator>>(istream& istr, matrix &a)
 {
-    for (int i = 0; i < a.getn(); i++)
+    if (a.getn() > 0 && a.getm() > 0)
     {
-        for (int j = 0; j < a.getm(); j++)
-            istr >> a(i, j);
+        for (int i = 0; i < a.getn(); i++)
+        {
+            for (int j = 0; j < a.getm(); j++)
+                istr >> a(i, j);
+        }
+        return (istr);
     }
-    return (istr);
+    else
+        return (istr);
 }
 int main()
 {
     system("chcp 1251>null");
     int n, m, result = 0;
     cin >> n >> m;
-    matrix x(n, m),temp,temp2(n,m);
-    cin >> x;
-    temp2 = x * temp;
+    matrix x, temp;
+    x.minor(1, 1);
     return 0;
 }
